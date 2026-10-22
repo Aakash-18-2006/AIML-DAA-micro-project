@@ -1,0 +1,58 @@
+topic,previous_score,practice_hours,questions_solved,previous_attempts,target_score
+Arrays,65,12,35,1,72
+Arrays,45,6,15,2,52
+Arrays,80,18,50,1,88
+Arrays,30,4,10,3,38
+Arrays,55,10,25,1,63
+Arrays,70,14,40,2,76
+Arrays,40,5,12,3,48
+Sorting,58,8,22,2,65
+Sorting,35,4,10,3,42
+Sorting,75,16,45,1,82
+Sorting,48,7,18,2,55
+Sorting,62,11,30,1,69
+Sorting,25,3,8,4,32
+Sorting,82,20,55,1,90
+Searching,60,9,26,1,68
+Searching,42,5,14,2,49
+Searching,78,15,44,1,84
+Searching,33,4,9,3,39
+Searching,52,8,20,2,59
+Searching,70,13,38,1,77
+Searching,46,6,16,2,53
+Graphs,40,6,14,2,47
+Graphs,68,14,38,1,75
+Graphs,32,4,8,3,38
+Graphs,55,10,24,2,62
+Graphs,75,17,48,1,83
+Graphs,28,3,6,4,33
+Graphs,62,12,30,1,70
+BFS,48,8,18,2,55
+BFS,30,4,9,3,36
+BFS,72,15,42,1,79
+BFS,40,6,12,2,46
+BFS,65,13,34,1,73
+BFS,26,3,7,3,31
+BFS,58,10,25,2,66
+DFS,50,9,20,2,58
+DFS,34,5,11,3,41
+DFS,74,16,45,1,81
+DFS,42,7,15,2,49
+DFS,68,14,36,1,76
+DFS,29,3,8,4,35
+DFS,60,11,28,1,68
+Dijkstra,35,5,10,3,40
+Dijkstra,60,12,28,2,67
+Dijkstra,25,3,6,4,30
+Dijkstra,70,16,40,1,78
+Dijkstra,42,7,14,2,48
+Dijkstra,52,10,22,2,59
+Dijkstra,20,2,4,4,24
+Dynamic Programming,30,5,10,4,35
+Dynamic Programming,65,15,35,2,72
+Dynamic Programming,22,3,6,4,27
+Dynamic Programming,75,18,48,1,84
+Dynamic Programming,45,8,18,3,52
+Dynamic Programming,58,12,28,2,65
+Dynamic Programming,38,6,12,3,44
+Dynamic Programming,80,20,52,1,89
