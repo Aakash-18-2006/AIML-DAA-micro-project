@@ -275,3 +275,6 @@ The repository is fully configured for zero-configuration deployment on **Stream
 - **LMS / GitHub Integration**: Connect with Learning Management Systems (LMS) or GitHub classroom APIs to automatically fetch coding commits and quiz scores.
 - **Adaptive Spaced Repetition**: Combine topological study path generation with spaced repetition intervals (e.g., Leitner system / SM-2 algorithm) for revision scheduling.
 - **Multi-Subject Curriculum Graphs**: Expand the prerequisite graph engine to support cross-disciplinary curriculums (e.g., Mathematics, Operating Systems, Machine Learning).
+
+Deployment Link - https://aiml-daa-micro-project-tzdogrt8nrcubrf5yamjgg.streamlit.app/
+Github Link - https://github.com/Aakash-18-2006/AIML-DAA-micro-project
