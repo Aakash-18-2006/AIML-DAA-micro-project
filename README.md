@@ -37,9 +37,9 @@ Students frequently face several major learning roadblocks:
 - **Downstream Dependency Traversal (BFS)**: FIFO queue-based exploration to reveal all subsequent topics unlocked by mastering a given concept.
 - **Upstream Prerequisite Resolution (DFS)**: Recursive traversal to discover all prerequisite ancestors required before tackling an advanced concept.
 - **Greedy Topological Study Path Generation**: In-degree-based topological sequencing that dynamically prioritizes topics with lowest predicted scores when multiple prerequisites are met.
-- **Dynamic Topic & Dependency Management**: Add or remove custom topics and dependencies dynamically with built-in Directed Acyclic Graph cycle validation.
+- **Dynamic Topic & Dependency Management**: Add, edit, or remove custom topics and dependencies dynamically with built-in Directed Acyclic Graph cycle validation and reliable local JSON file persistence (`data/subjects.json`) across page reloads and application restarts.
 - **Interactive Web Interface**: Streamlit dashboard featuring progress indicators, status badges, metric cards, and step-by-step reasoning for each scheduled topic.
-- **Automated Pipeline Testing**: Dedicated test suite (`test_pipeline.py`) validating model accuracy, graph operations, BFS/DFS traversal, and topological ordering.
+- **Automated Pipeline Testing**: Dedicated test suites (`test_pipeline.py` and `tests/test_subjects_persistence.py`) validating model accuracy, graph operations, BFS/DFS traversal, topological ordering, and file storage persistence.
 
 ---
 
@@ -243,14 +243,34 @@ py -3.13 test_pipeline.py
 
 ---
 
+## ☁️ Deployment on Streamlit Community Cloud
+
+The repository is fully configured for zero-configuration deployment on **Streamlit Community Cloud**:
+
+1. **Repository**: Push this repository to GitHub (`main` branch).
+2. **Dashboard**: Navigate to [share.streamlit.io](https://share.streamlit.io) and log in with GitHub.
+3. **New App Settings**:
+   - **Repository**: `Aakash-18-2006/AIML-DAA-micro-project`
+   - **Branch**: `main`
+   - **Main file path**: `app.py`
+4. **Deploy**: Click **Deploy**. Streamlit Cloud will install dependencies from `requirements.txt` and launch the application.
+
+### 💾 Cloud Storage & Persistence Note
+- **Local Environment**: Curriculum additions, edits, and deletions are saved directly to `data/subjects.json` and persist permanently across page refreshes and application restarts.
+- **Streamlit Community Cloud Limitation**: Streamlit Community Cloud runs in ephemeral Docker containers. While `data/subjects.json` persists within a running container session, container sleep cycles, restarts, and new git deployments will reset local files to the repository's committed version.
+- **Persistent Cloud Architecture Recommendation**: For multi-user, permanently persisted curriculum state in production cloud environments, replace local file I/O with an external cloud database service (such as **Supabase (PostgreSQL)**, **Firebase Firestore**, or **AWS DynamoDB**) with user authentication.
+
+---
+
 ## ⚠️ Limitations and Future Enhancements
 
 ### Limitations
 - **Linearity Assumption**: Multiple Linear Regression assumes predominantly linear relationships between practice metrics and topic scores.
 - **Curriculum Scope**: Current default dependency graph is pre-configured for fundamental Data Structures and Algorithms topics.
-- **Metric Ingestion**: Performance metrics are currently entered via dashboard sliders or loaded from local CSV files.
+- **Ephemeral Cloud Storage**: On free serverless tiers like Streamlit Community Cloud, local filesystem modifications do not persist across container reboots.
 
 ### Future Enhancements
+- **Cloud Database Integration**: Integrate Supabase / PostgreSQL for permanent multi-user curriculum synchronization.
 - **Non-Linear ML Models**: Introduce Random Forest Regressor or Gradient Boosted Decision Trees to capture non-linear student learning curves.
 - **LMS / GitHub Integration**: Connect with Learning Management Systems (LMS) or GitHub classroom APIs to automatically fetch coding commits and quiz scores.
 - **Adaptive Spaced Repetition**: Combine topological study path generation with spaced repetition intervals (e.g., Leitner system / SM-2 algorithm) for revision scheduling.

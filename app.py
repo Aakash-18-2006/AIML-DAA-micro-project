@@ -7,6 +7,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import importlib
+import os
+import json
 
 import algorithms.graph
 importlib.reload(algorithms.graph)
@@ -128,22 +130,84 @@ DEFAULT_METRICS = {
     "Dynamic Programming": {"previous_score": 62, "practice_hours": 9, "questions_solved": 22, "previous_attempts": 1},
 }
 
-# Initialize session state for dynamic topics and graph edges
+# ----------------- RELIABLE SUBJECT PERSISTENCE (data/subjects.json) -----------------
+SUBJECTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "subjects.json")
+DATASET_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "student_data.csv")
+
+
+def load_subjects_data():
+    """
+    Loads subjects, prerequisite edges, and metrics from data/subjects.json.
+    - If the file does not exist, creates it with DEFAULT_TOPICS, DEFAULT_EDGES, and DEFAULT_METRICS.
+    - If the user has saved custom subjects (even an intentionally empty list []), respects that list without restoring defaults.
+    - Safely handles missing, empty, or corrupted JSON files.
+    """
+    os.makedirs(os.path.dirname(SUBJECTS_FILE), exist_ok=True)
+    
+    if not os.path.exists(SUBJECTS_FILE):
+        save_subjects_data(DEFAULT_TOPICS, DEFAULT_EDGES, DEFAULT_METRICS)
+        return list(DEFAULT_TOPICS), list(DEFAULT_EDGES), {k: dict(v) for k, v in DEFAULT_METRICS.items()}
+    
+    try:
+        with open(SUBJECTS_FILE, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                save_subjects_data(DEFAULT_TOPICS, DEFAULT_EDGES, DEFAULT_METRICS)
+                return list(DEFAULT_TOPICS), list(DEFAULT_EDGES), {k: dict(v) for k, v in DEFAULT_METRICS.items()}
+            
+            data = json.loads(content)
+            
+            if isinstance(data, dict):
+                subjects = data.get("subjects")
+                edges = [tuple(e) for e in data.get("edges", [])]
+                metrics = data.get("metrics", {})
+                
+                # If "subjects" key exists (even if empty list []), honor it!
+                if subjects is not None and isinstance(subjects, list):
+                    return subjects, edges, metrics
+                
+            elif isinstance(data, list):
+                # Fallback support if file contains a plain list of subject strings
+                return data, [e for e in DEFAULT_EDGES if e[0] in data and e[1] in data], {k: DEFAULT_METRICS.get(k, {}) for k in data}
+    except Exception as e:
+        print(f"[Warning] Error reading {SUBJECTS_FILE}: {e}. Safely falling back.")
+    
+    return list(DEFAULT_TOPICS), list(DEFAULT_EDGES), {k: dict(v) for k, v in DEFAULT_METRICS.items()}
+
+
+def save_subjects_data(subjects, edges=None, metrics=None):
+    """
+    Safely writes subjects, edges, and metrics to data/subjects.json using UTF-8.
+    """
+    try:
+        os.makedirs(os.path.dirname(SUBJECTS_FILE), exist_ok=True)
+        payload = {
+            "initialized": True,
+            "subjects": list(subjects) if subjects is not None else [],
+            "edges": [list(e) for e in (edges or [])],
+            "metrics": dict(metrics or {})
+        }
+        with open(SUBJECTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"[Error] Failed to save {SUBJECTS_FILE}: {e}")
+        return False
+
+
+# Initialize session state from data/subjects.json on session start or page reload
 if "topics" not in st.session_state:
-    st.session_state.topics = list(DEFAULT_TOPICS)
-
-if "edges" not in st.session_state:
-    st.session_state.edges = list(DEFAULT_EDGES)
-
-if "topic_metrics" not in st.session_state:
-    st.session_state.topic_metrics = {k: dict(v) for k, v in DEFAULT_METRICS.items()}
+    saved_topics, saved_edges, saved_metrics = load_subjects_data()
+    st.session_state.topics = saved_topics
+    st.session_state.edges = saved_edges
+    st.session_state.topic_metrics = saved_metrics
 
 
 @st.cache_resource
 def get_ml_model():
     """Trains the Linear Regression model once."""
     try:
-        model, metrics = train_linear_regression("data/student_data.csv")
+        model, metrics = train_linear_regression(DATASET_FILE)
         return model, metrics, None
     except Exception as e:
         return None, None, str(e)
@@ -207,10 +271,11 @@ if load_error:
     st.error(f"Error loading model or dataset: {load_error}")
     st.stop()
 
-# ----------------- SIDEBAR: CURRICULUM MANAGEMENT (ADD / DELETE) -----------------
+# ----------------- SIDEBAR: CURRICULUM MANAGEMENT (ADD / EDIT / DELETE) -----------------
 st.sidebar.markdown("### 📚 Subject & Topic Management")
+st.sidebar.caption("💾 *Saved to `data/subjects.json`. Note: On Streamlit Community Cloud, instances are container-ephemeral; permanent multi-user cloud persistence across container restarts requires an external cloud database (e.g. Supabase / PostgreSQL).*")
 
-# Expander: Add Topic
+# Expander 1: Add Topic
 with st.sidebar.expander("➕ Add New Topic / Subject", expanded=False):
     new_topic_name = st.text_input("Topic Name", placeholder="e.g., Binary Trees, Greedy Methods", key="input_new_topic").strip()
     
@@ -249,10 +314,74 @@ with st.sidebar.expander("➕ Add New Topic / Subject", expanded=False):
                     "questions_solved": int(new_q_solved),
                     "previous_attempts": int(new_attempts),
                 }
-                st.toast(f"✅ Topic '{new_topic_name}' added successfully!")
+                save_subjects_data(st.session_state.topics, st.session_state.edges, st.session_state.topic_metrics)
+                st.toast(f"✅ Topic '{new_topic_name}' added and saved!")
                 st.rerun()
 
-# Expander: Delete Topic & Reset
+# Expander 2: Edit Topic / Subject
+with st.sidebar.expander("✏️ Edit Subject / Topic", expanded=False):
+    if st.session_state.topics:
+        edit_target = st.selectbox("Select Topic to Edit", st.session_state.topics, key="select_edit_topic")
+        edit_name = st.text_input("Topic Name", value=edit_target, key="input_edit_name").strip()
+        
+        existing_prereqs = [u for u, v in st.session_state.edges if v == edit_target]
+        available_edit_prereqs = [t for t in st.session_state.topics if t != edit_target]
+        valid_default_prereqs = [p for p in existing_prereqs if p in available_edit_prereqs]
+        edit_prereqs = st.multiselect("Edit Prerequisites", available_edit_prereqs, default=valid_default_prereqs, key="input_edit_prereqs")
+        
+        curr_m = st.session_state.topic_metrics.get(edit_target, {"previous_score": 50, "practice_hours": 6, "questions_solved": 15, "previous_attempts": 1})
+        col_e1, col_e2 = st.columns(2)
+        with col_e1:
+            e_score = st.number_input("Past Score (%)", min_value=0, max_value=100, value=int(curr_m.get("previous_score", 50)), key="edit_score")
+            e_hours = st.number_input("Practice Hours", min_value=0, max_value=100, value=int(curr_m.get("practice_hours", 6)), key="edit_hours")
+        with col_e2:
+            e_qs = st.number_input("Questions Solved", min_value=0, max_value=200, value=int(curr_m.get("questions_solved", 15)), key="edit_qs")
+            e_att = st.number_input("Attempts", min_value=0, max_value=20, value=int(curr_m.get("previous_attempts", 1)), key="edit_att")
+        
+        if st.button(f"💾 Save Changes to '{edit_target}'", use_container_width=True):
+            if not edit_name:
+                st.sidebar.error("⚠️ Topic name cannot be empty.")
+            elif edit_name.lower() != edit_target.lower() and any(t.lower() == edit_name.lower() for t in st.session_state.topics):
+                st.sidebar.error(f"⚠️ Topic '{edit_name}' already exists!")
+            else:
+                # Cycle detection
+                temp_g = PrerequisiteGraph()
+                for t in st.session_state.topics:
+                    temp_g.add_vertex(edit_name if t == edit_target else t)
+                for u, v in st.session_state.edges:
+                    if v != edit_target:
+                        src = edit_name if u == edit_target else u
+                        temp_g.add_edge(src, v)
+                for p in edit_prereqs:
+                    src = edit_name if p == edit_target else p
+                    temp_g.add_edge(src, edit_name)
+                
+                if check_graph_cycle(temp_g):
+                    st.sidebar.error("⚠️ Cannot update: Circular prerequisite dependency detected!")
+                else:
+                    idx = st.session_state.topics.index(edit_target)
+                    st.session_state.topics[idx] = edit_name
+                    
+                    new_edges = [(edit_name if u == edit_target else u, v) for u, v in st.session_state.edges if v != edit_target]
+                    for p in edit_prereqs:
+                        new_edges.append((p, edit_name))
+                    st.session_state.edges = new_edges
+                    
+                    if edit_name != edit_target:
+                        st.session_state.topic_metrics.pop(edit_target, None)
+                    st.session_state.topic_metrics[edit_name] = {
+                        "previous_score": int(e_score),
+                        "practice_hours": int(e_hours),
+                        "questions_solved": int(e_qs),
+                        "previous_attempts": int(e_att),
+                    }
+                    save_subjects_data(st.session_state.topics, st.session_state.edges, st.session_state.topic_metrics)
+                    st.toast(f"✅ Topic '{edit_name}' updated and saved!")
+                    st.rerun()
+    else:
+        st.info("No topics available to edit.")
+
+# Expander 3: Delete Topic & Reset
 with st.sidebar.expander("🗑️ Delete Topic / Subject", expanded=False):
     if st.session_state.topics:
         topic_to_delete = st.selectbox("Select Topic to Delete", st.session_state.topics, key="delete_topic_select")
@@ -261,15 +390,25 @@ with st.sidebar.expander("🗑️ Delete Topic / Subject", expanded=False):
             st.session_state.topics = [t for t in st.session_state.topics if t != topic_to_delete]
             st.session_state.edges = [(u, v) for u, v in st.session_state.edges if u != topic_to_delete and v != topic_to_delete]
             st.session_state.topic_metrics.pop(topic_to_delete, None)
-            st.toast(f"🗑️ Topic '{topic_to_delete}' deleted successfully!")
+            save_subjects_data(st.session_state.topics, st.session_state.edges, st.session_state.topic_metrics)
+            st.toast(f"🗑️ Topic '{topic_to_delete}' deleted and removed from storage!")
+            st.rerun()
+
+        if st.button("🗑️ Clear All Topics (Empty Curriculum)", use_container_width=True):
+            st.session_state.topics = []
+            st.session_state.edges = []
+            st.session_state.topic_metrics = {}
+            save_subjects_data([], [], {})
+            st.toast("🗑️ All topics cleared from curriculum and storage.")
             st.rerun()
     else:
-        st.info("No topics available.")
+        st.info("No topics available in curriculum.")
 
     if st.button("🔄 Reset to Default Curriculum", use_container_width=True):
         st.session_state.topics = list(DEFAULT_TOPICS)
         st.session_state.edges = list(DEFAULT_EDGES)
         st.session_state.topic_metrics = {k: dict(v) for k, v in DEFAULT_METRICS.items()}
+        save_subjects_data(DEFAULT_TOPICS, DEFAULT_EDGES, DEFAULT_METRICS)
         st.toast("🔄 Reset to default 8 topics.")
         st.rerun()
 
@@ -379,6 +518,11 @@ with st.sidebar.form("student_data_form"):
     threshold = st.slider("Weak Topic Score Threshold (%)", min_value=40, max_value=80, value=60, step=5)
     include_all = st.checkbox("Include all topics in path (even strong topics)", value=False)
     submit_button = st.form_submit_button("🚀 Generate My Study Path", use_container_width=True)
+
+if submit_button:
+    for t_name, t_vals in student_inputs.items():
+        st.session_state.topic_metrics[t_name] = dict(t_vals)
+    save_subjects_data(st.session_state.topics, st.session_state.edges, st.session_state.topic_metrics)
 
 # Main Dashboard Content
 # Re-sync graph from current session state

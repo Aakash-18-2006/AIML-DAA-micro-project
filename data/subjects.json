@@ -1,0 +1,93 @@
+{
+  "initialized": true,
+  "subjects": [
+    "Arrays",
+    "Sorting",
+    "Searching",
+    "Graphs",
+    "BFS",
+    "DFS",
+    "Dijkstra",
+    "Dynamic Programming"
+  ],
+  "edges": [
+    [
+      "Arrays",
+      "Sorting"
+    ],
+    [
+      "Arrays",
+      "Searching"
+    ],
+    [
+      "Graphs",
+      "BFS"
+    ],
+    [
+      "Graphs",
+      "DFS"
+    ],
+    [
+      "Graphs",
+      "Dijkstra"
+    ],
+    [
+      "BFS",
+      "Dijkstra"
+    ],
+    [
+      "Searching",
+      "Dynamic Programming"
+    ]
+  ],
+  "metrics": {
+    "Arrays": {
+      "previous_score": 75,
+      "practice_hours": 12,
+      "questions_solved": 35,
+      "previous_attempts": 1
+    },
+    "Sorting": {
+      "previous_score": 70,
+      "practice_hours": 10,
+      "questions_solved": 25,
+      "previous_attempts": 1
+    },
+    "Searching": {
+      "previous_score": 68,
+      "practice_hours": 8,
+      "questions_solved": 20,
+      "previous_attempts": 1
+    },
+    "Graphs": {
+      "previous_score": 40,
+      "practice_hours": 4,
+      "questions_solved": 8,
+      "previous_attempts": 2
+    },
+    "BFS": {
+      "previous_score": 35,
+      "practice_hours": 3,
+      "questions_solved": 6,
+      "previous_attempts": 3
+    },
+    "DFS": {
+      "previous_score": 42,
+      "practice_hours": 4,
+      "questions_solved": 8,
+      "previous_attempts": 2
+    },
+    "Dijkstra": {
+      "previous_score": 25,
+      "practice_hours": 2,
+      "questions_solved": 4,
+      "previous_attempts": 4
+    },
+    "Dynamic Programming": {
+      "previous_score": 62,
+      "practice_hours": 9,
+      "questions_solved": 22,
+      "previous_attempts": 1
+    }
+  }
+}

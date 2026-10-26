@@ -63,7 +63,19 @@ def main():
     assert "Binary Trees" in graph.get_dependents("Arrays")
     assert "Arrays" in graph.get_prerequisites("Binary Trees")
 
-    # Test cycle detection
+    # Test cycle detection: DAG must return False
+    assert not graph.has_cycle()
+
+    # Introduce a cyclic dependency: Dijkstra -> Graphs (Graphs -> BFS -> Dijkstra -> Graphs)
+    graph.add_edge("Dijkstra", "Graphs")
+    assert graph.has_cycle(), "Graph must detect circular prerequisite dependency (Graphs -> BFS -> Dijkstra -> Graphs)!"
+    graph.remove_edge("Dijkstra", "Graphs")
+    assert not graph.has_cycle(), "Graph must return False after cycle edge is removed!"
+
+    # Introduce direct 2-node cycle: Sorting -> Arrays (Arrays -> Sorting -> Arrays)
+    graph.add_edge("Sorting", "Arrays")
+    assert graph.has_cycle(), "Graph must detect circular dependency (Arrays -> Sorting -> Arrays)!"
+    graph.remove_edge("Sorting", "Arrays")
     assert not graph.has_cycle()
 
     # Test deletion
